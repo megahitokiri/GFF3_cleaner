@@ -30,10 +30,10 @@ writeXStringSet(Assembly,file=fasta_name)
 
 for (i in 1:17)
 {
-  fasta_name = paste0(names(Assembly)[i],".fasta")
+  fasta_name = paste0("scaffold_",i,".fasta")
   writeXStringSet(Assembly[i],file=fasta_name)
 }
 
 print("Scaffold 18 contains all minor scaffolds")
-fasta_name = "scaffold_11.fasta"
+fasta_name = "scaffold_18.fasta"
 writeXStringSet(Assembly[18:length(Assembly)],file=fasta_name)
