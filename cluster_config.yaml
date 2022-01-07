@@ -20,61 +20,25 @@ Chr_splitting:
     error: EDTA_individual-%j.err #stdoutput error
 
 EDTA_individual:
-    time: 0-12:00:00 # time limit for each job
+    time: 0-24:00:00 # time limit for each job
     output: EDTA_individual-%j.out #stdoutput. 
     error: EDTA_individual-%j.err #stdoutput error
     cpus: 32
     mem: 190G
 
 Masked_FASTA:
-    time: 0-0:30:00 # time limit for each job
+    time: 0-2:30:00 # time limit for each job
     output: Masked_FASTA-%j.out #stdoutput. 
     error: Masked_FASTA-%j.err #stdoutput error
     cpus: 1
     
-MINIMAP2:
-    time: 0-12:00:00 # time limit for each job
+STEP1_annotation:
+    time: 0-2:00:00 # time limit for each job
     output: MINIMAP2-%j.out #stdoutput. 
     error: MINIMAP2-%j.err #stdoutput error
     cpus: 32
     mem: 190G
  
-Nanopore_Raw_to_Chr:
-    time: 0-12:00:00 # time limit for each job
-    output: Nanopore_Raw_to_Chr-%j.out #stdoutput. 
-    error: Nanopore_Raw_to_Chr-%j.err #stdoutput error
-    cpus: 16
-    mem: 190G
-    
-Minor_Scaffolds_correction:
-    time: 0-12:00:00 # time limit for each job
-    output: Nanopore_Raw_to_Chr-%j.out #stdoutput. 
-    error: Nanopore_Raw_to_Chr-%j.err #stdoutput error
-    
-MAKER3:
-    time: 0-14:00:00 # time limit for each job
-    nodes: 6
-    ntask: 8
-    cpus: 4
-    mem: 120G
-    output: MAKER3-%j.out #stdoutput. 
-    error: MAKER3-%j.err #stdoutput error
-
-POST_MAKER:
-    time: 0-0:30:00 # time limit for each job
-    output: POST_MAKER-%j.out #stdoutput. 
-    error: POST_MAKER-%j.err #stdoutput error
-
-AED_FILTER:
-    time: 0-0:30:00 # time limit for each job
-    output: AED_FILTER-%j.out #stdoutput. 
-    error: AED_FILTER-%j.err #stdoutput error
-    
-ORF_analysis:
-    time: 0-6:00:00 # time limit for each job
-    output: ORF_analysis-%j.out #stdoutput. 
-    error: ORF_analysis-%j.err #stdoutput error
-
 Chr_merge:
     time: 0-0:30:00 # time limit for each job
     output: Chr_merge-%j.out #stdoutput. 

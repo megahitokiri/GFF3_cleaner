@@ -7,6 +7,7 @@ CHRS = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18'.split()
 PROJECT = "HanIR"
 REFERENCE = "MAIN_FASTAs/HanIRr1.0-20201123.genome.fasta"
 NEW_NAMES_REFERENCE = "HanIRr1.0-20201123.genome.new_names.fasta"
+GFF3_FILE = "MAIN_GFF3s/HanIRr1.0-20201123.gff3"
 
 #--------------------------------------------------------------------------------
 # TargetRule FINAL_GFF3
@@ -19,8 +20,7 @@ rule FINAL_GFF3:
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.TElib.fa",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",Project=PROJECT,Chrs = CHRS),
-#		expand("Post_Maker_Files/MAKER_ORF_Filtered_{Project}.scaffold_{Chrs}.AED_{AED_filter}.gff3",Project=PROJECT,Chrs = CHRS,AED_filter=AED_FILTER),
-		
+		expand("{Gff3_file}",Gff3_file=GFF3_FILE),		
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
 #--------------------------------------------------------------------------------
@@ -41,6 +41,7 @@ rule Init:
 			mkdir logs
 			mkdir EDTA_Files
 			mkdir Ref
+			mkdir Annotation_steps
 			mkdir FINAL_ANNOTATION
 			mkdir COGNATE
 		cd ..
@@ -117,12 +118,34 @@ rule Masked_FASTA:
 		reference=rules.Chr_splitting.output,
 	output:
 		masked_fasta_file="{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",
+	params:
+		project=PROJECT,
 	shell:
 		"""
 		ml bedtools
-		cd EDTA_Files
+		cd {params.project}/EDTA_Files
 		echo "Creating Masked Reference Genome for scaffold_{wildcards.Chrs}.masked.fasta"
-		bedtools maskfasta -fi scaffold_{wildcards.Chrs}.fasta -bed scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3 -fo scaffold_{wildcards.Chrs}.masked.fasta
+		bedtools maskfasta -fi scaffold_{wildcards.Chrs}.fasta -bed scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3 -fo {params.project}_{wildcards.Chrs}.masked.fasta
 		ml unload bedtools	
 		"""
 
+#--------------------------------------------------------------------------------
+# STEP1_annotation: Transform Analysis .
+#--------------------------------------------------------------------------------
+
+rule STEP1_annotation:
+	input:
+		Masked_FASTA_file=rules.Masked_FASTA.output.masked_fasta_file,
+		Gff3_file={GFF3_FILE},
+	output:
+		masked_fasta_file="{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		ml r/4.1.0
+		cp {input.Gff3_file} {params.project}/Annotation_steps/{params.project}.gff3
+		echo "Processing Step1 of annotation"
+		R --vanilla < Step1_Annotation.R --args -a {params.project} -c {wildcards.Chrs}
+		ml unload r/4.1.0
+		"""
