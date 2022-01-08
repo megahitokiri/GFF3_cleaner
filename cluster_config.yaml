@@ -20,7 +20,7 @@ Chr_splitting:
     error: EDTA_individual-%j.err #stdoutput error
 
 EDTA_individual:
-    time: 0-24:00:00 # time limit for each job
+    time: 0-23:45:00 # time limit for each job
     output: EDTA_individual-%j.out #stdoutput. 
     error: EDTA_individual-%j.err #stdoutput error
     cpus: 32

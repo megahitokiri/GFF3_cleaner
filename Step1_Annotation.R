@@ -90,7 +90,7 @@ HAN_Assembly_Curated_file <- merge(gff.HAN_Assembly_raw_genes,Masked_genes_filte
 Folder_Name=paste0(Base_Directory,"/",File_Name,"/Annotation_steps")
 setwd(Folder_Name)
 getwd()
-Output_name = paste0(File_Name,"_step1_output.gff3")
+Output_name = paste0(File_Name,"_step1_chr",Chomosome_number,".gff3")
 print(Output_name)
 
 export(HAN_Assembly_Curated_file,Output_name,format="gff3")

@@ -20,7 +20,8 @@ rule FINAL_GFF3:
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.TElib.fa",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",Project=PROJECT,Chrs = CHRS),
-		expand("{Gff3_file}",Gff3_file=GFF3_FILE),		
+		expand("{Gff3_file}",Gff3_file=GFF3_FILE),
+		expand("{Project}/Annotation_steps/{Project}_step1_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
 #--------------------------------------------------------------------------------
@@ -138,7 +139,7 @@ rule STEP1_annotation:
 		Masked_FASTA_file=rules.Masked_FASTA.output.masked_fasta_file,
 		Gff3_file={GFF3_FILE},
 	output:
-		masked_fasta_file="{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",
+		gff3_step1="{Project}/Annotation_steps/{Project}_step1_chr{Chrs}.gff3",
 	params:
 		project=PROJECT,
 	shell:
