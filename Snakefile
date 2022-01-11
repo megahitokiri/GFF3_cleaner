@@ -17,11 +17,14 @@ rule FINAL_GFF3:
 	input:
 		expand("{Main_Reference}",Main_Reference=REFERENCE),
 		expand("{Project}/Ref/scaffold_{Chrs}.fasta",Project=PROJECT,Chrs = CHRS),
-		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.TElib.fa",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3",Project=PROJECT,Chrs = CHRS),
-		expand("{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",Project=PROJECT,Chrs = CHRS),
+		expand("{Project}/EDTA_Files/{Project}_chr{Chrs}.masked.fasta",Project=PROJECT,Chrs = CHRS),
 		expand("{Gff3_file}",Gff3_file=GFF3_FILE),
 		expand("{Project}/Annotation_steps/{Project}_step1_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
+		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
+		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
+		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}.sorted.gff3",Project=PROJECT),
+
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
 #--------------------------------------------------------------------------------
@@ -91,7 +94,6 @@ rule EDTA_individual:
 	input:
 		rules.Chr_splitting.output,
 	output:
-		fa_file="{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.TElib.fa",
 		gff3_file="{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3",
 	params:
 		project=PROJECT,
@@ -118,7 +120,7 @@ rule Masked_FASTA:
 		EDTA_repeats_file=rules.EDTA_individual.output.gff3_file,
 		reference=rules.Chr_splitting.output,
 	output:
-		masked_fasta_file="{Project}/EDTA_Files/scaffold_{Chrs}.masked.fasta",
+		masked_fasta_file="{Project}/EDTA_Files/{Project}_chr{Chrs}.masked.fasta",
 	params:
 		project=PROJECT,
 	shell:
@@ -126,12 +128,12 @@ rule Masked_FASTA:
 		ml bedtools
 		cd {params.project}/EDTA_Files
 		echo "Creating Masked Reference Genome for scaffold_{wildcards.Chrs}.masked.fasta"
-		bedtools maskfasta -fi scaffold_{wildcards.Chrs}.fasta -bed scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3 -fo {params.project}_{wildcards.Chrs}.masked.fasta
+		bedtools maskfasta -fi scaffold_{wildcards.Chrs}.fasta -bed scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3 -fo {params.project}_chr{wildcards.Chrs}.masked.fasta
 		ml unload bedtools	
 		"""
 
 #--------------------------------------------------------------------------------
-# STEP1_annotation: Transform Analysis .
+# STEP1_annotation: Transform Analysis into parsed GFF3 files .
 #--------------------------------------------------------------------------------
 
 rule STEP1_annotation:
@@ -150,3 +152,50 @@ rule STEP1_annotation:
 		R --vanilla < Step1_Annotation.R --args -a {params.project} -c {wildcards.Chrs}
 		ml unload r/4.1.0
 		"""
+#------------------------------------------------------------------------------------
+# STEP2_annotation: Uses EDTA maked fasta file and ORF analysis to determine viable genes
+#------------------------------------------------------------------------------------
+
+rule STEP2_annotation:
+	input:
+		GFF3_File=rules.STEP1_annotation.output,
+		Ref_File=rules.Chr_splitting.output,
+		Masked_FASTA_File=rules.Masked_FASTA.output,
+	output:
+		gff3_step2="{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		BASEDIR=$PWD 
+		cp -v Step2_filtering.R {params.project}/Annotation_steps/
+		cd {params.project}/Annotation_steps/
+		ml r/4.1.0
+		R --vanilla < Step2_filtering.R --args -g $BASEDIR/{params.project}/Annotation_steps/{params.project}_step1_chr{wildcards.Chrs}.gff3 -a $BASEDIR/{params.project}/Ref/scaffold_{wildcards.Chrs}.fasta -m $BASEDIR/{params.project}/EDTA_Files/{params.project}_chr{wildcards.Chrs}.masked.fasta -o {params.project}_step2_chr{wildcards.Chrs}.gff3
+		ml unload r/4.1.0
+		cd ..
+		"""
+		
+#------------------------------------------------------------------------------------
+# Chr_merge: Fuse all gff3 individual chromosomes into complete assembly again
+#------------------------------------------------------------------------------------
+
+rule Chr_merge:
+	input:
+		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
+	output:
+		"{Project}/FINAL_ANNOTATION/FINAL_{Project}.sorted.gff3",
+	params:
+		project=PROJECT,
+		Chrs=CHRS,
+	shell:
+		"""
+		cat {params.project}/Annotation_steps/{params.project}_step2_chr1.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.gff3
+		
+		for i in {{2..18}}
+			do
+			tail -n +4 {params.project}/Annotation_steps/{params.project}_step2_chr$i.gff3 >> {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.gff3
+			done
+		
+		/home/jmlazaro/github/gff3sort/gff3sort.pl --chr_order original {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3
+		"""		

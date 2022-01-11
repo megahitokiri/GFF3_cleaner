@@ -11,20 +11,20 @@ __default__:
     
 Init:
     time: 0-0:30:00 # time limit for each job
-    output: EDTA_individual-%j.out #stdoutput. 
-    error: EDTA_individual-%j.err #stdoutput error
+    output: Init-%j.out #stdoutput. 
+    error: Init-%j.err #stdoutput error
 
 Chr_splitting:
     time: 0-0:30:00 # time limit for each job
-    output: EDTA_individual-%j.out #stdoutput. 
-    error: EDTA_individual-%j.err #stdoutput error
+    output: Chr_splitting-%j.out #stdoutput. 
+    error: Chr_splitting-%j.err #stdoutput error
 
 EDTA_individual:
-    time: 0-23:45:00 # time limit for each job
+    time: 0-35:45:00 # time limit for each job
     output: EDTA_individual-%j.out #stdoutput. 
     error: EDTA_individual-%j.err #stdoutput error
-    cpus: 32
-    mem: 190G
+    cpus: 16
+    mem: 120G
 
 Masked_FASTA:
     time: 0-2:30:00 # time limit for each job
@@ -33,12 +33,19 @@ Masked_FASTA:
     cpus: 1
     
 STEP1_annotation:
-    time: 0-2:00:00 # time limit for each job
-    output: MINIMAP2-%j.out #stdoutput. 
-    error: MINIMAP2-%j.err #stdoutput error
-    cpus: 32
-    mem: 190G
- 
+    time: 0-2:30:00 # time limit for each job
+    output: STEP1_annotation-%j.out #stdoutput. 
+    error: STEP1_annotation-%j.err #stdoutput error
+    cpus: 2
+    mem: 120G
+
+STEP1_annotation:
+    time: 0-5:30:00 # time limit for each job
+    output: STEP1_annotation-%j.out #stdoutput. 
+    error: STEP1_annotation-%j.err #stdoutput error
+    cpus: 4
+    mem: 120G
+    
 Chr_merge:
     time: 0-0:30:00 # time limit for each job
     output: Chr_merge-%j.out #stdoutput. 

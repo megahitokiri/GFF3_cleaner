@@ -31,7 +31,7 @@ Base_Directory=getwd()
 Folder_Name=paste0(Base_Directory,"/",File_Name,"/Annotation_steps")
 setwd(Folder_Name)
 getwd()
-Masked_Fasta_File <- paste0(File_Name,"_",Chomosome_number,".masked.fasta")
+Masked_Fasta_File <- paste0(File_Name,"_chr",Chomosome_number,".masked.fasta")
 Gff3_file <- paste0(File_Name,".gff3")
 
 #STEP 1 mask the genome with bedtools maskfasta -fi FASTA -bed GFF -fo output
