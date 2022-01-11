@@ -39,10 +39,10 @@ STEP1_annotation:
     cpus: 2
     mem: 120G
 
-STEP1_annotation:
+STEP2_annotation:
     time: 0-5:30:00 # time limit for each job
-    output: STEP1_annotation-%j.out #stdoutput. 
-    error: STEP1_annotation-%j.err #stdoutput error
+    output: STEP2_annotation-%j.out #stdoutput. 
+    error: STEP2_annotation-%j.err #stdoutput error
     cpus: 4
     mem: 120G
     
