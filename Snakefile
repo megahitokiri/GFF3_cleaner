@@ -168,10 +168,11 @@ rule STEP2_annotation:
 	shell:
 		"""
 		BASEDIR=$PWD 
-		cp -v Step2_filtering.R {params.project}/Annotation_steps/
+		pwd
+		cp -v $BASEDIR/Step2_Filtering.R {params.project}/Annotation_steps/
 		cd {params.project}/Annotation_steps/
 		ml r/4.1.0
-		R --vanilla < Step2_filtering.R --args -g $BASEDIR/{params.project}/Annotation_steps/{params.project}_step1_chr{wildcards.Chrs}.gff3 -a $BASEDIR/{params.project}/Ref/scaffold_{wildcards.Chrs}.fasta -m $BASEDIR/{params.project}/EDTA_Files/{params.project}_chr{wildcards.Chrs}.masked.fasta -o {params.project}_step2_chr{wildcards.Chrs}.gff3
+		R --vanilla < Step2_Filtering.R --args -g $BASEDIR/{params.project}/Annotation_steps/{params.project}_step1_chr{wildcards.Chrs}.gff3 -a $BASEDIR/{params.project}/Ref/scaffold_{wildcards.Chrs}.fasta -m $BASEDIR/{params.project}/EDTA_Files/{params.project}_chr{wildcards.Chrs}.masked.fasta -o {params.project}_step2_chr{wildcards.Chrs}
 		ml unload r/4.1.0
 		cd ..
 		"""

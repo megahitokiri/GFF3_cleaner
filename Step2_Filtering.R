@@ -174,9 +174,10 @@ ORF_filtered_genes.gr <- with(ORF_filtered_genes.DF, GRanges(seqnames, IRanges(s
 
 ###Getting Step2 Sequence filtered GFF3
 HAN_Step2_Filtered_GFF <- as.data.frame(subsetByOverlaps(HAN_raw.gr, ORF_filtered_genes.gr))
-HAN_Step2_Filtered_GFF <- HAN_Step2_Filtered_GFF[,c("seqnames","start","end","width","strand","source","type","score","phase", "ID","Name","Alias","Parent")]
+print(colnames(HAN_Step2_Filtered_GFF))
+HAN_Step2_Filtered_GFF <- HAN_Step2_Filtered_GFF[,c("seqnames","start","end","width","strand","source","type","score","phase","ID","Name","locus_tag")]
 
-export(HAN_Step2_Filtered_GFF,paste0("HAN_ORF_Filtered_",Output_Name,".gff3"),format="gff3")
+export(HAN_Step2_Filtered_GFF,paste0(Output_Name,".gff3"),format="gff3")
 
 sink(paste0("predicted_proteins_HAN_ORF_Filtered_",Output_Name,".fasta"))
 writeLines(unlist(lapply(Proteins_list, paste, collapse=" ")))
@@ -188,5 +189,3 @@ Pseudogenes$Pseudo <- ifelse(Pseudogenes$No_Introns==0,"Likely_PseudoGene",Pseud
 Pseudogenes$Gene_Name <- step1_filtered_genes.gr$ID
 
 export(HAN_Step2_Filtered_GFF,paste0("predicted_Pseudogenes_HAN_ORF_Filtered_",Output_Name,".gff3"),format="gff3")
-
-
