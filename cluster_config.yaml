@@ -52,8 +52,8 @@ Chr_merge:
     error: Chr_merge-%j.err #stdoutput error
     cpus: 1 
     
-COGNATE:
-    time: 0-24:00:00 # time limit for each job
+Summary_statistics:
+    time: 0-23:45:00 # time limit for each job
     output: COGNATE-%j.out #stdoutput. 
     error: COGNATE-%j.err #stdoutput error
     cpus: 16

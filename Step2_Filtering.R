@@ -186,7 +186,7 @@ ORF_filtered_genes.gr <- with(ORF_filtered_genes.DF, GRanges(seqnames, IRanges(s
 ###Getting Step2 Sequence filtered GFF3
 HAN_Step2_Filtered_GFF <- as.data.frame(subsetByOverlaps(HAN_Original.gr, ORF_filtered_genes.gr))
 print(colnames(HAN_Step2_Filtered_GFF))
-HAN_Step2_Filtered_GFF <- HAN_Step2_Filtered_GFF[,c("seqnames","start","end","width","strand","source","type","score","phase","ID","Name","locus_tag")]
+#HAN_Step2_Filtered_GFF <- HAN_Step2_Filtered_GFF[,c("seqnames","start","end","width","strand","source","type","score","phase","ID","Name","locus_tag")]
 
 export(HAN_Step2_Filtered_GFF,paste0(Output_Name,".gff3"),format="gff3")
 

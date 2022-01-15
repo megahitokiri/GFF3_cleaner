@@ -22,7 +22,8 @@ rule FINAL_GFF3:
 		expand("{Gff3_file}",Gff3_file=GFF3_FILE),
 		expand("{Project}/Annotation_steps/{Project}_step1_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
-		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1.sorted.gff3",Project=PROJECT),
+		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_1.sorted.gff3",Project=PROJECT),
+		expand("{Project}/Summary_data/{Project}.protein.fasta",Project=PROJECT),
 
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
@@ -46,12 +47,10 @@ rule Init:
 			mkdir Ref
 			mkdir Annotation_steps
 			mkdir FINAL_ANNOTATION
-			mkdir COGNATE
+			mkdir Summary_data
 		cd ..
 		cp  {input.reference} {output}
-
 		ml samtools
-
 		#Index FASTA file
 		samtools faidx {output} 
 		
@@ -76,14 +75,11 @@ rule Chr_splitting:
 		"""
 		echo Assembly_Chr_splitter.R --args -f {input} 
 		ml r/4.1.0
-
 		echo Assembly split into Chromosomes
 		R --vanilla < Assembly_Chr_splitter.R --args -f {input} &&
 		mv *scaffold*.fasta {params.project}/Ref/
-
 		ml unload r/4.1.0
 		ml unload samtools
-
 		"""
 
 #--------------------------------------------------------------------------------
@@ -100,10 +96,8 @@ rule EDTA_individual:
 	shell:
 		"""
 		cp {params.project}/Ref/*scaffold*.* {params.project}/EDTA_Files
-
 		cd {params.project}/EDTA_Files
 		eval "$(conda shell.bash hook)"
-
 		conda activate EDTA
 			echo starting EDTA process on: scaffold_{wildcards.Chrs}.fasta
 			EDTA.pl --genome scaffold_{wildcards.Chrs}.fasta
@@ -185,7 +179,7 @@ rule Chr_merge:
 	input:
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 	output:
-		"{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1.sorted.gff3",
+		"{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_1.sorted.gff3",
 	params:
 		project=PROJECT,
 		Chrs=CHRS,
@@ -199,4 +193,39 @@ rule Chr_merge:
 			done
 		
 		/home/jmlazaro/github/gff3sort/gff3sort.pl --chr_order original {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3
+		awk '{gsub("character\\(0\\)", "0");print}' {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1_1.sorted.gff3
 		"""		
+
+#------------------------------------------------------------------------------------
+# Summary_statistics: Get summary of the new gff3 file
+#------------------------------------------------------------------------------------
+
+rule Summary_statistics:
+	input:
+		GFF3_file=rules.Chr_merge.output,
+		Ref_file=rules.Init.output
+	output:
+		Protein_FASTA="{Project}/Summary_data/{Project}.protein.fasta",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		BASEDIR=$PWD
+		ml StdEnv/2020  gcc/9.3.0
+		ml nixpkgs/16.09  gcc/5.4.0
+		ml nixpkgs/16.09  gcc/7.3.0
+		ml transdecoder/5.5.0
+		
+		gff3_file_to_proteins.pl --gff3 {input.GFF3_file} --fasta $BASEDIR/{input.Ref_file} --seqType prot > $BASEDIR/{params.project}/Summary_data/{params.project}.protein.fasta
+		ml unload transdecoder/5.5.0
+		
+		#ml gffread/0.12.3
+		#ml mii/1.1.1
+		#gffread -w $BASEDIR/{params.project}/Summary_data/{params.project}.CDS.fasta -g $BASEDIR/{input.Ref_file} {input.GFF3_file}
+
+		
+		#You can also get complete sequences of (converted) proteins using prot instead of using CDS or cDNAs using cDNA or genes using gene.
+
+		cat Summary COMPLETED CORRECTLY ....
+		ml unload perl
+		"""
