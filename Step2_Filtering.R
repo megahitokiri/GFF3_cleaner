@@ -22,7 +22,9 @@ option_list = list(
   make_option(c("-m", "--massembly"), type="character", default=NULL, 
               help="Required masked Assembly Name file", metavar="Assembly_File"),
   make_option(c("-o", "--output"), type="character", default=NULL, 
-              help="Output Name file", metavar="Assembly_File")
+              help="Output Name file", metavar="Assembly_File"),
+  make_option(c("-s", "--start_gff3"), type="character", default=NULL, 
+              help="Starting GFF3", metavar="Starting_GFF3_File")			  
 )
 
 opt_parser = OptionParser(option_list=option_list);
@@ -32,16 +34,23 @@ File_Name = opt$gff_file
 Assembly_Name = opt$assembly
 Masked_Assembly_Name = opt$massembly
 Output_Name = opt$output
-
+Original_GFF3 = opt$start_gff3
 
 my_columns <- c("seqid","start","end","strand","type")
 my_filter <- list(type="gene")
 
-HAN_scaffold_gff3_raw <- as.data.frame(readGFF(File_Name))
+HAN_scaffold_gff3_Original <- as.data.frame(readGFF(Original_GFF3))
+		#saveRDS(HAN_scaffold_gff3_Original, file = "HAN_scaffold_gff3_Original.rds")
+
 HAN_scaffold_gff3_genes<- as.data.frame(readGFF(File_Name,columns = my_columns, filter = my_filter))
+		#saveRDS(HAN_scaffold_gff3_genes, file = "HAN_scaffold_gff3_genes.rds")	
+
 ###Import Fasta file and transform into DNAstring Dataset,names correlated with GFF3
 Assembly_DNA <- readDNAStringSet(Assembly_Name)
+		#saveRDS(Assembly_DNA, file = "Assembly_DNA.rds")
+		
 Masked_Assembly_DNA <- readDNAStringSet(Masked_Assembly_Name)
+		#saveRDS(Masked_Assembly_DNA, file = "Masked_Assembly_DNA.rds")
 
 HAN_Genes_gr <- with(HAN_scaffold_gff3_genes, GRanges(seqid, IRanges(start, end),strand, id = Name))
 
@@ -61,7 +70,8 @@ HAN_Masked_genes_filtered_list <- HAN_Masked_genes_filtered[,c("Name","TE_Overla
 
 HAN_genes_Curated_file <- merge(HAN_scaffold_gff3_genes,HAN_Masked_genes_filtered_list, by = "Name", all.y = TRUE)
 ####END STEP1
-HAN_raw.gr <- makeGRangesFromDataFrame(HAN_scaffold_gff3_raw, ignore.strand = FALSE,
+
+HAN_Original.gr <- makeGRangesFromDataFrame(HAN_scaffold_gff3_Original, ignore.strand = FALSE,
                                           seqinfo = NULL,
                                           seqnames.field = "seqid",
                                           start.field = "start",
@@ -69,7 +79,7 @@ HAN_raw.gr <- makeGRangesFromDataFrame(HAN_scaffold_gff3_raw, ignore.strand = FA
                                           strand.field = "strand",
                                           keep.extra.columns = TRUE)
 
-
+										  
 step1_filtered_genes.gr <- makeGRangesFromDataFrame(HAN_genes_Curated_file , ignore.strand = FALSE,
                                                     seqinfo = NULL,
                                                     seqnames.field = "seqid",
@@ -78,15 +88,12 @@ step1_filtered_genes.gr <- makeGRangesFromDataFrame(HAN_genes_Curated_file , ign
                                                     strand.field = "strand",
                                                     keep.extra.columns = TRUE)
 
-HAN_Filtered_GFF <- subsetByOverlaps(HAN_raw.gr, step1_filtered_genes.gr)
+HAN_Filtered_GFF <- subsetByOverlaps(HAN_Original.gr, step1_filtered_genes.gr)
 
 ###CDS Filtering
 gff.HAN_CDS <- filter(as.data.frame(HAN_Filtered_GFF),type=="CDS")
 HAN_CDS_gr <- with(gff.HAN_CDS, GRanges(seqnames, IRanges(start, end),strand, id = ID))
 
-
-###OBTAINING DNA SEQUENCE FROM MASKED FASTA IN ALL THE GFF REGIONS
-HAN_GFF_DNA <- getSeq(Masked_Assembly_DNA,HAN_Filtered_GFF)
 
 #ORF Analysis START
 ##################
@@ -95,7 +102,9 @@ txdb <- makeTxDbFromGRanges(HAN_Filtered_GFF)
 
 ## get intron information
 all.introns <- intronicParts(txdb)
+	#saveRDS(all.introns, file = "all.introns.rds")
 all.exons <- exonicParts(txdb)
+	#saveRDS(all.exons, file = "all.exons.rds")
 
 ORF_filtered_genes.gr <-GRanges()
 Proteins_list <- list()
@@ -139,6 +148,8 @@ for (i in 1:length(step1_filtered_genes.gr))
   ###Order the SEQUENCE
   CDS_region <- sortSeqlevels(CDS_region)
   CDS_region <- sort(CDS_region, decreasing = Reverse_CDS)
+      ## Drop all unused seqlevels:
+      seqlevels(CDS_region) <- seqlevelsInUse(CDS_region)
   
   if(length(CDS_region)>0)
   {
@@ -173,7 +184,7 @@ ORF_filtered_genes.gr <- with(ORF_filtered_genes.DF, GRanges(seqnames, IRanges(s
                                                              strand, ORFS_Number))
 
 ###Getting Step2 Sequence filtered GFF3
-HAN_Step2_Filtered_GFF <- as.data.frame(subsetByOverlaps(HAN_raw.gr, ORF_filtered_genes.gr))
+HAN_Step2_Filtered_GFF <- as.data.frame(subsetByOverlaps(HAN_Original.gr, ORF_filtered_genes.gr))
 print(colnames(HAN_Step2_Filtered_GFF))
 HAN_Step2_Filtered_GFF <- HAN_Step2_Filtered_GFF[,c("seqnames","start","end","width","strand","source","type","score","phase","ID","Name","locus_tag")]
 

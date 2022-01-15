@@ -22,8 +22,7 @@ rule FINAL_GFF3:
 		expand("{Gff3_file}",Gff3_file=GFF3_FILE),
 		expand("{Project}/Annotation_steps/{Project}_step1_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
-		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
-		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}.sorted.gff3",Project=PROJECT),
+		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1.sorted.gff3",Project=PROJECT),
 
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
@@ -161,6 +160,7 @@ rule STEP2_annotation:
 		GFF3_File=rules.STEP1_annotation.output,
 		Ref_File=rules.Chr_splitting.output,
 		Masked_FASTA_File=rules.Masked_FASTA.output,
+		Original_Gff3_file={GFF3_FILE},
 	output:
 		gff3_step2="{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",
 	params:
@@ -172,7 +172,7 @@ rule STEP2_annotation:
 		cp -v $BASEDIR/Step2_Filtering.R {params.project}/Annotation_steps/
 		cd {params.project}/Annotation_steps/
 		ml r/4.1.0
-		R --vanilla < Step2_Filtering.R --args -g $BASEDIR/{params.project}/Annotation_steps/{params.project}_step1_chr{wildcards.Chrs}.gff3 -a $BASEDIR/{params.project}/Ref/scaffold_{wildcards.Chrs}.fasta -m $BASEDIR/{params.project}/EDTA_Files/{params.project}_chr{wildcards.Chrs}.masked.fasta -o {params.project}_step2_chr{wildcards.Chrs}
+		R --vanilla < Step2_Filtering.R --args -g $BASEDIR/{params.project}/Annotation_steps/{params.project}_step1_chr{wildcards.Chrs}.gff3 -a $BASEDIR/{params.project}/Ref/scaffold_{wildcards.Chrs}.fasta -m $BASEDIR/{params.project}/EDTA_Files/{params.project}_chr{wildcards.Chrs}.masked.fasta -o {params.project}_step2_chr{wildcards.Chrs} -s $BASEDIR/{input.Original_Gff3_file}
 		ml unload r/4.1.0
 		cd ..
 		"""
@@ -185,7 +185,7 @@ rule Chr_merge:
 	input:
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 	output:
-		"{Project}/FINAL_ANNOTATION/FINAL_{Project}.sorted.gff3",
+		"{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1.sorted.gff3",
 	params:
 		project=PROJECT,
 		Chrs=CHRS,
