@@ -24,8 +24,8 @@ rule FINAL_GFF3:
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_1.sorted.gff3",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}.protein.fasta",Project=PROJECT),
-		expand("{Project}/Summary_data/JML_new.{Project}.summary",Project=PROJECT)),
-		expand("{Project}/Summary_data/Original.{Project}.summary",Project=PROJECT)),
+		expand("{Project}/Summary_data/JML_new.{Project}.summary",Project=PROJECT),
+		expand("{Project}/Summary_data/Original.{Project}.summary",Project=PROJECT),
 
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
@@ -239,7 +239,6 @@ rule Summary_statistics:
 			agat_sp_statistics.pl --gff {input.Original_Gff3_file} --output $BASEDIR/{params.project}/Summary_data/Original.{params.project}.summary
 		conda deactivate
 		
-
 		cat Summary COMPLETED CORRECTLY ....
 		ml unload perl
 		"""
