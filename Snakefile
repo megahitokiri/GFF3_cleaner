@@ -193,7 +193,9 @@ rule Chr_merge:
 			done
 		
 		/home/jmlazaro/github/gff3sort/gff3sort.pl --chr_order original {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3
-		awk '{gsub("character\\(0\\)", "0");print}' {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1_1.sorted.gff3
+	
+		echo awk '{{gsub("character\\\(0\\\)", '0');print}}' {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3 
+		awk '{{gsub("character\\\(0\\\)", "0");print}}' {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1.sorted.gff3 > {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1_1.sorted.gff3
 		"""		
 
 #------------------------------------------------------------------------------------
