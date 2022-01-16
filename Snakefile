@@ -27,7 +27,17 @@ rule FINAL_GFF3:
 		expand("{Project}/Summary_data/JML.{Project}_GFF3_summary.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/Original.{Project}_GFF3_summary.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",Project=PROJECT),
-		expand("{params.project}.Pipeline_complete.txt",Project=PROJECT),
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!!
+		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!! > {params.project}.Pipeline_complete.txt
+		mv *.err {params.project}/logs
+		mv *.out {params.project}/logs
+
+		date "+DATE: %D%nTIME: %T" >> {params.project}.Pipeline_complete.txt
+		"""	
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
 #--------------------------------------------------------------------------------
@@ -242,15 +252,16 @@ rule GFF3_statistics:
 		project=PROJECT,
 	shell:
 		"""
-		cp -v GFF3_Summary_Statistics.R {Project}/Summary_data/
-		cd {Project}/Summary_data/
+		BASEDIR=$PWD
+		cp -v GFF3_Summary_Statistics.R {params.project}/Summary_data/
+		cd {params.project}/Summary_data/
 		
 		ml r/4.1.0
 		echo Calculating Statistics on New processed file
-		R --vanilla < GFF3_Summary_Statistics.R --args --gff {input.GFF3_file} -o JML.{params.project}
+		R --vanilla < GFF3_Summary_Statistics.R --args --gff $BASEDIR/{input.GFF3_file} -o JML.{params.project}
 		
 		echo Calculating Statistics on Original file
-		R --vanilla < GFF3_Summary_Statistics.R --args --gff {input.GFF3_file} -o Original.{params.project}
+		R --vanilla < GFF3_Summary_Statistics.R --args --gff $BASEDIR/{input.Original_Gff3_file} -o Original.{params.project}
 		cd ../..
 		"""
 		
@@ -282,26 +293,4 @@ rule BUSCO:
 		
 		busco -f -c 4 -m protein -i $BASEDIR/{params.project}/Summary_data/{params.project}.protein.fasta -o {params.project}_busco -l eudicots_odb10 --offline --download_path $BASEDIR/{params.project}/Summary_data/busco_downloads
 		echo done BUSCO analysis
-		"""
-
-#------------------------------------------------------------------------------------
-# Clean: Clean the redundat jobs and move log in to correct location
-#------------------------------------------------------------------------------------
-
-rule Clean:
-	input:
-		BUSCO_results=rules.BUSCO.output,
-		GFF3_results=rules.GFF3_statistics.Original_GFF3_summary
-	output:
-		"{params.project}.Pipeline_complete.txt",
-	params:
-		project=PROJECT,
-	shell:
-		"""
-		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!!
-		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!! > {params.project}.Pipeline_complete.txt
-		mv *.err {params.project}/logs
-		mv *.out {params.project}/logs
-
-		date +"%T" >> {params.project}.Pipeline_complete.txt
 		"""
