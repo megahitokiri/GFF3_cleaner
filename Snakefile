@@ -24,6 +24,8 @@ rule FINAL_GFF3:
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_1.sorted.gff3",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}.protein.fasta",Project=PROJECT),
+		expand("{Project}/Summary_data/JML_new.{Project}.summary",Project=PROJECT)),
+		expand("{Project}/Summary_data/Original.{Project}.summary",Project=PROJECT)),
 
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
@@ -206,8 +208,11 @@ rule Summary_statistics:
 	input:
 		GFF3_file=rules.Chr_merge.output,
 		Ref_file=rules.Init.output
+		Original_Gff3_file={GFF3_FILE},
 	output:
 		Protein_FASTA="{Project}/Summary_data/{Project}.protein.fasta",
+		Summary_GFF3="{Project}/Summary_data/JML_new.{Project}.summary"
+		Original_Summary_GFF3="{Project}/Summary_data/Original.{Project}.summary"
 	params:
 		project=PROJECT,
 	shell:
@@ -224,9 +229,16 @@ rule Summary_statistics:
 		#ml gffread/0.12.3
 		#ml mii/1.1.1
 		#gffread -w $BASEDIR/{params.project}/Summary_data/{params.project}.CDS.fasta -g $BASEDIR/{input.Ref_file} {input.GFF3_file}
-
-		
 		#You can also get complete sequences of (converted) proteins using prot instead of using CDS or cDNAs using cDNA or genes using gene.
+		
+		eval "$(conda shell.bash hook)"
+		conda activate agat_env
+			echo starting GFF3 summary process on: {input.GFF3_file}
+			agat_sp_statistics.pl --gff {input.GFF3_file} --output $BASEDIR/{params.project}/Summary_data/JML_new.{params.project}.summary
+			echo starting GFF3 summary process on Original File: {input.Original_Gff3_file}
+			agat_sp_statistics.pl --gff {input.Original_Gff3_file} --output $BASEDIR/{params.project}/Summary_data/Original.{params.project}.summary
+		conda deactivate
+		
 
 		cat Summary COMPLETED CORRECTLY ....
 		ml unload perl
