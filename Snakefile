@@ -24,8 +24,7 @@ rule FINAL_GFF3:
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_1.sorted.gff3",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}.protein.fasta",Project=PROJECT),
-		expand("{Project}/Summary_data/JML_new.{Project}.summary",Project=PROJECT),
-		expand("{Project}/Summary_data/Original.{Project}.summary",Project=PROJECT),
+		expand("{Project}/Summary_data/{Project}.summary.txt",Project=PROJECT),
 
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
@@ -207,12 +206,10 @@ rule Chr_merge:
 rule Summary_statistics:
 	input:
 		GFF3_file=rules.Chr_merge.output,
-		Ref_file=rules.Init.output
+		Ref_file=rules.Init.output,
 		Original_Gff3_file={GFF3_FILE},
 	output:
 		Protein_FASTA="{Project}/Summary_data/{Project}.protein.fasta",
-		Summary_GFF3="{Project}/Summary_data/JML_new.{Project}.summary"
-		Original_Summary_GFF3="{Project}/Summary_data/Original.{Project}.summary"
 	params:
 		project=PROJECT,
 	shell:
@@ -226,19 +223,33 @@ rule Summary_statistics:
 		gff3_file_to_proteins.pl --gff3 {input.GFF3_file} --fasta $BASEDIR/{input.Ref_file} --seqType prot > $BASEDIR/{params.project}/Summary_data/{params.project}.protein.fasta
 		ml unload transdecoder/5.5.0
 		
-		#ml gffread/0.12.3
-		#ml mii/1.1.1
-		#gffread -w $BASEDIR/{params.project}/Summary_data/{params.project}.CDS.fasta -g $BASEDIR/{input.Ref_file} {input.GFF3_file}
-		#You can also get complete sequences of (converted) proteins using prot instead of using CDS or cDNAs using cDNA or genes using gene.
-		
-		eval "$(conda shell.bash hook)"
-		conda activate agat_env
-			echo starting GFF3 summary process on: {input.GFF3_file}
-			agat_sp_statistics.pl --gff {input.GFF3_file} --output $BASEDIR/{params.project}/Summary_data/JML_new.{params.project}.summary
-			echo starting GFF3 summary process on Original File: {input.Original_Gff3_file}
-			agat_sp_statistics.pl --gff {input.Original_Gff3_file} --output $BASEDIR/{params.project}/Summary_data/Original.{params.project}.summary
-		conda deactivate
-		
-		cat Summary COMPLETED CORRECTLY ....
+		echo Protein File Generated correctly CORRECTLY ....
 		ml unload perl
+		"""
+#------------------------------------------------------------------------------------
+# BUSCO: Evaluate the Cognate results into BUSCO protein mode
+#------------------------------------------------------------------------------------
+
+rule BUSCO:
+	input:
+		Protein_fasta=rules.Summary_statistics.output.Protein_FASTA,
+	output:
+		"{Project}/Summary_data/{Project}.summary.txt",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		BASEDIR=$PWD
+
+		ml busco/5.2.2
+		mkdir {params.project}/Summary_data/busco_downloads
+		mkdir {params.project}/Summary_data/busco_downloads/lineages
+		
+		cp /home/jmlazaro/BUSCO/eudicots_odb10.tar.gz {params.project}/Summary_data/busco_downloads/lineages
+		cd {params.project}/Summary_data/busco_downloads/lineages
+		tar -xvf eudicots_odb10.tar.gz
+		cd $BASEDIR/{params.project}/Summary_data/
+		
+		busco -f -c 4 -m protein -i $BASEDIR/{params.project}/Summary_data/{params.project}.protein.fasta -o {params.project}_busco -l eudicots_odb10 --offline --download_path $BASEDIR/{params.project}/Summary_data/busco_downloads
+		echo done > {params.project}.summary.txt
 		"""

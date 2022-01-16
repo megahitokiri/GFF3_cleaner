@@ -53,7 +53,14 @@ Chr_merge:
     cpus: 1 
     
 Summary_statistics:
-    time: 0-23:45:00 # time limit for each job
-    output: COGNATE-%j.out #stdoutput. 
-    error: COGNATE-%j.err #stdoutput error
+    time: 0-2:45:00 # time limit for each job
+    output: Summary_statistics-%j.out #stdoutput. 
+    error: Summary_statistics-%j.err #stdoutput error
     cpus: 16
+
+BUSCO:
+    time: 0-5:45:00 # time limit for each job
+    output: BUSCO-%j.out #stdoutput. 
+    error: BUSCO-%j.err #stdoutput error
+    cpus: 16    
+    
