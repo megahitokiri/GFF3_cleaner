@@ -24,8 +24,10 @@ rule FINAL_GFF3:
 		expand("{Project}/Annotation_steps/{Project}_step2_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_1.sorted.gff3",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}.protein.fasta",Project=PROJECT),
-		expand("{Project}/Summary_data/{Project}.summary.txt",Project=PROJECT),
-
+		expand("{Project}/Summary_data/JML.{Project}_GFF3_summary.txt",Project=PROJECT),
+		expand("{Project}/Summary_data/Original.{Project}_GFF3_summary.txt",Project=PROJECT),
+		expand("{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",Project=PROJECT),
+		expand("{params.project}.Pipeline_complete.txt",Project=PROJECT),
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
 #--------------------------------------------------------------------------------
@@ -207,7 +209,6 @@ rule Summary_statistics:
 	input:
 		GFF3_file=rules.Chr_merge.output,
 		Ref_file=rules.Init.output,
-		Original_Gff3_file={GFF3_FILE},
 	output:
 		Protein_FASTA="{Project}/Summary_data/{Project}.protein.fasta",
 	params:
@@ -227,6 +228,33 @@ rule Summary_statistics:
 		ml unload perl
 		"""
 #------------------------------------------------------------------------------------
+# GFF3_statistics: Calculate Statistics for Original and filtered GFF3 files
+#------------------------------------------------------------------------------------
+
+rule GFF3_statistics:
+	input:
+		GFF3_file=rules.Chr_merge.output,
+		Original_Gff3_file={GFF3_FILE},
+	output:
+		New_GFF3_summary="{Project}/Summary_data/JML.{Project}_GFF3_summary.txt",
+		Original_GFF3_summary="{Project}/Summary_data/Original.{Project}_GFF3_summary.txt",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		cp -v GFF3_Summary_Statistics.R {Project}/Summary_data/
+		cd {Project}/Summary_data/
+		
+		ml r/4.1.0
+		echo Calculating Statistics on New processed file
+		R --vanilla < GFF3_Summary_Statistics.R --args --gff {input.GFF3_file} -o JML.{params.project}
+		
+		echo Calculating Statistics on Original file
+		R --vanilla < GFF3_Summary_Statistics.R --args --gff {input.GFF3_file} -o Original.{params.project}
+		cd ../..
+		"""
+		
+#------------------------------------------------------------------------------------
 # BUSCO: Evaluate the Cognate results into BUSCO protein mode
 #------------------------------------------------------------------------------------
 
@@ -234,13 +262,15 @@ rule BUSCO:
 	input:
 		Protein_fasta=rules.Summary_statistics.output.Protein_FASTA,
 	output:
-		"{Project}/Summary_data/{Project}.summary.txt",
+		"{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",
 	params:
 		project=PROJECT,
 	shell:
 		"""
 		BASEDIR=$PWD
-
+		ml StdEnv/2020
+		ml gcc/9.3.0
+		ml openmpi/4.0.3
 		ml busco/5.2.2
 		mkdir {params.project}/Summary_data/busco_downloads
 		mkdir {params.project}/Summary_data/busco_downloads/lineages
@@ -251,5 +281,27 @@ rule BUSCO:
 		cd $BASEDIR/{params.project}/Summary_data/
 		
 		busco -f -c 4 -m protein -i $BASEDIR/{params.project}/Summary_data/{params.project}.protein.fasta -o {params.project}_busco -l eudicots_odb10 --offline --download_path $BASEDIR/{params.project}/Summary_data/busco_downloads
-		echo done > {params.project}.summary.txt
+		echo done BUSCO analysis
+		"""
+
+#------------------------------------------------------------------------------------
+# Clean: Clean the redundat jobs and move log in to correct location
+#------------------------------------------------------------------------------------
+
+rule Clean:
+	input:
+		BUSCO_results=rules.BUSCO.output,
+		GFF3_results=rules.GFF3_statistics.Original_GFF3_summary
+	output:
+		"{params.project}.Pipeline_complete.txt",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!!
+		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!! > {params.project}.Pipeline_complete.txt
+		mv *.err {params.project}/logs
+		mv *.out {params.project}/logs
+
+		date +"%T" >> {params.project}.Pipeline_complete.txt
 		"""

@@ -52,14 +52,20 @@ Chr_merge:
     error: Chr_merge-%j.err #stdoutput error
     cpus: 1 
     
-Summary_statistics:
+GFF3_statistics:
     time: 0-2:45:00 # time limit for each job
-    output: Summary_statistics-%j.out #stdoutput. 
-    error: Summary_statistics-%j.err #stdoutput error
+    output: GFF3_statistics-%j.out #stdoutput. 
+    error: GFF3_statistics-%j.err #stdoutput error
     cpus: 16
 
+Chr_merge:
+    time: 0-0:30:00 # time limit for each job
+    output: Chr_merge-%j.out #stdoutput. 
+    error: Chr_merge-%j.err #stdoutput error
+    cpus: 1 
+    
 BUSCO:
-    time: 0-5:45:00 # time limit for each job
+    time: 0-2:45:00 # time limit for each job
     output: BUSCO-%j.out #stdoutput. 
     error: BUSCO-%j.err #stdoutput error
     cpus: 16    
