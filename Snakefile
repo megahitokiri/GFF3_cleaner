@@ -123,7 +123,7 @@ rule EDTA_individual:
 			EDTA.pl --genome scaffold_{wildcards.Chrs}.fasta
 		conda deactivate
 		
-		bash Name_checker_post.sh scaffold_{wildcards.Chrs}.fasta {params.project} scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3
+		bash Name_checker_post.sh scaffold_{wildcards.Chrs}.fasta {params.project} scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3
 		"""
 		
 #--------------------------------------------------------------------------------
