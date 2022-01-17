@@ -4,10 +4,10 @@
 #--------------------------------------------------------------------------------
 
 CHRS = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18'.split()
-PROJECT = "HanIR"
-REFERENCE = "MAIN_FASTAs/HanIRr1.0-20201123.genome.fasta"
-NEW_NAMES_REFERENCE = "HanIRr1.0-20201123.genome.new_names.fasta"
-GFF3_FILE = "MAIN_GFF3s/HanIRr1.0-20201123.gff3"
+PROJECT = "HanHA300"
+REFERENCE = "MAIN_FASTAs/HanHA300r0.9-20211022.genome.fasta"
+NEW_NAMES_REFERENCE = "HanHA300r0.9-20211022.genome.new_names.fasta"
+GFF3_FILE = "MAIN_GFF3s/HanHA300r0.9-20211022.gff3"
 
 #--------------------------------------------------------------------------------
 # TargetRule FINAL_GFF3
@@ -109,12 +109,21 @@ rule EDTA_individual:
 	shell:
 		"""
 		cp {params.project}/Ref/*scaffold*.* {params.project}/EDTA_Files
+		cp -v Name_checker_pre.sh {params.project}/EDTA_Files
+		cp -v Name_checker_post.sh {params.project}/EDTA_Files
+		
 		cd {params.project}/EDTA_Files
+		
+		echo "Name_cheker pre and post correct EDTA bigger tha 15 characters name error on FASTA."
+		bash Name_checker_pre.sh scaffold_{wildcards.Chrs}.fasta {params.project}
+		
 		eval "$(conda shell.bash hook)"
 		conda activate EDTA
 			echo starting EDTA process on: scaffold_{wildcards.Chrs}.fasta
 			EDTA.pl --genome scaffold_{wildcards.Chrs}.fasta
 		conda deactivate
+		
+		bash Name_checker_post.sh scaffold_{wildcards.Chrs}.fasta {params.project} scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3
 		"""
 		
 #--------------------------------------------------------------------------------
