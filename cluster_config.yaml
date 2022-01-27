@@ -87,4 +87,10 @@ BUSCO_Original:
     output: BUSCO_Original-%j.out #stdoutput. 
     error: BUSCO_Original-%j.err #stdoutput error
     cpus: 16    
-    
+ 
+Missing_BUSCO:
+    time: 0-0:45:00 # time limit for each job
+    output: Missing_BUSCO-%j.out #stdoutput. 
+    error: Missing_BUSCO-%j.err #stdoutput error
+    cpus: 1 
+ 

@@ -4,10 +4,10 @@
 #--------------------------------------------------------------------------------
 
 CHRS = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18'.split()
-PROJECT = "HanPI6594"
-REFERENCE = "MAIN_FASTAs/HanPI659440r1.0-20210824.genome.fasta"
-NEW_NAMES_REFERENCE = "HanPI659440r1.0-20210824.genome.new_names.fasta"
-GFF3_FILE = "MAIN_GFF3s/HanPI659440r1.0-20210824.gff3"
+PROJECT = "HanRHA438"
+REFERENCE = "MAIN_FASTAs/HanRHA438r1.0-20201123.genome.fasta"
+NEW_NAMES_REFERENCE = "HanRHA438r1.0-20201123.genome.new_names.fasta"
+GFF3_FILE = "MAIN_GFF3s/HanRHA438r1.0-20201123.gff3"
 
 #--------------------------------------------------------------------------------
 # TargetRule FINAL_GFF3
@@ -27,8 +27,11 @@ rule FINAL_GFF3:
 		expand("{Project}/Summary_data/JML.{Project}_GFF3_summary.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/Original.{Project}_GFF3_summary.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",Project=PROJECT),
+		expand("{Project}/Summary_data/{Project}_busco/run_eudicots_odb10/missing_busco_list.tsv",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}.original.protein.fasta",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}_busco_original/short_summary.specific.eudicots_odb10.{Project}_busco_original.txt",Project=PROJECT),
+		expand("{Project}/Summary_data/{Project}_busco_original/run_eudicots_odb10/missing_busco_list.tsv",Project=PROJECT),
+		expand("{Project}/Summary_data/Missing_buscos/{Project}_Missing_buscos.txt",Project=PROJECT),
 	params:
 		project=PROJECT,
 	shell:
@@ -284,7 +287,8 @@ rule BUSCO:
 	input:
 		Protein_fasta=rules.Summary_statistics.output.Protein_FASTA,
 	output:
-		"{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",
+		Busco_New_results="{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",
+		Busco_New_Missing="{Project}/Summary_data/{Project}_busco/run_eudicots_odb10/missing_busco_list.tsv",
 	params:
 		project=PROJECT,
 	shell:
@@ -341,7 +345,8 @@ rule BUSCO_Original:
 	input:
 		Protein_fasta=rules.Summary_statistics_Original.output.Protein_FASTA,
 	output:
-		"{Project}/Summary_data/{Project}_busco_original/short_summary.specific.eudicots_odb10.{Project}_busco_original.txt",
+		Busco_Original_results="{Project}/Summary_data/{Project}_busco_original/short_summary.specific.eudicots_odb10.{Project}_busco_original.txt",
+		Busco_Original_Missing="{Project}/Summary_data/{Project}_busco_original/run_eudicots_odb10/missing_busco_list.tsv",
 	params:
 		project=PROJECT,
 	shell:
@@ -363,7 +368,27 @@ rule BUSCO_Original:
 		echo done BUSCO analysis
 		rm -rf $BASEDIR/{params.project}/Summary_data/busco_downloads_original
 		echo done removing termporal BUSCO_downloads_Original Folder 
-		"""				
-#[jmlazaro@cedar1 Summary_data]$ cp HanOQP8_busco/run_eudicots_odb10/missing_busco_list.tsv Missing_buscos/HanOQP8_busco_new.txt
-#[jmlazaro@cedar1 Summary_data]$ cp HanOQP8_busco_original/run_eudicots_odb10/missing_busco_list.tsv Missing_buscos/HanOQP8_busco_original.txt
-#diff -y HanOQP8_busco_new.txt HanOQP8_busco_original.txt > Missing_buscos.txt
+		"""		
+
+#---------------------------------------------------------------------------------------
+# Missing_BUSCO: Evaluate Missing Buscos
+#---------------------------------------------------------------------------------------
+
+rule Missing_BUSCO:
+	input:
+		Busco_Original=rules.BUSCO_Original.output.Busco_Original_Missing,
+		Busco_New=rules.BUSCO.output.Busco_New_Missing,
+	output:
+		"{Project}/Summary_data/Missing_buscos/{Project}_Missing_buscos.txt",
+	params:
+		project=PROJECT,
+	shell:
+		"""
+		BASEDIR=$PWD
+		mkdir {params.project}/Summary_data/Missing_buscos
+		cp -v {input.Busco_Original} {params.project}/Summary_data/Missing_buscos/{params.project}_busco_original.txt
+		cp -v {input.Busco_New} {params.project}/Summary_data/Missing_buscos/{params.project}_busco_new.txt
+		
+		cd {params.project}/Summary_data/Missing_buscos
+		diff -y {params.project}_busco_new.txt {params.project}_busco_original.txt > {params.project}/Summary_data/Missing_buscos/{params.project}_Missing_buscos.txt
+		"""			
