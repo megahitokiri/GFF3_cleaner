@@ -4,10 +4,10 @@
 #--------------------------------------------------------------------------------
 
 CHRS = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18'.split()
-PROJECT = "HanPI6594"
-REFERENCE = "MAIN_FASTAs/HanPI659440r1.0-20210824.genome.fasta"
-NEW_NAMES_REFERENCE = "HanPI659440r1.0-20210824.genome.new_names.fasta"
-GFF3_FILE = "MAIN_GFF3s/HanPI659440r1.0-20210824.gff3"
+PROJECT = "HanLR1"
+REFERENCE = "MAIN_FASTAs/HanLR1r0.9-20211115.genome.fasta"
+NEW_NAMES_REFERENCE = "HanLR1r0.9-20211115.genome.new_names.fasta"
+GFF3_FILE = "MAIN_GFF3s/HanLR1r0.9-20211115.gff3"
 
 #--------------------------------------------------------------------------------
 # TargetRule FINAL_GFF3
@@ -17,7 +17,7 @@ rule FINAL_GFF3:
 	input:
 		expand("{Main_Reference}",Main_Reference=REFERENCE),
 		expand("{Project}/Ref/scaffold_{Chrs}.fasta",Project=PROJECT,Chrs = CHRS),
-		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.TEanno.gff3",Project=PROJECT,Chrs = CHRS),
+		expand("{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3",Project=PROJECT,Chrs = CHRS),
 		expand("{Project}/EDTA_Files/{Project}_chr{Chrs}.masked.fasta",Project=PROJECT,Chrs = CHRS),
 		expand("{Gff3_file}",Gff3_file=GFF3_FILE),
 		expand("{Project}/Annotation_steps/{Project}_step1_chr{Chrs}.gff3",Project=PROJECT,Chrs = CHRS),
@@ -27,8 +27,6 @@ rule FINAL_GFF3:
 		expand("{Project}/Summary_data/JML.{Project}_GFF3_summary.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/Original.{Project}_GFF3_summary.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}_busco/short_summary.specific.eudicots_odb10.{Project}_busco.txt",Project=PROJECT),
-		expand("{Project}/Summary_data/{Project}.original.protein.fasta",Project=PROJECT),
-		expand("{Project}/Summary_data/{Project}_busco_original/short_summary.specific.eudicots_odb10.{Project}_busco_original.txt",Project=PROJECT),
 	params:
 		project=PROJECT,
 	shell:
@@ -104,28 +102,28 @@ rule EDTA_individual:
 	input:
 		rules.Chr_splitting.output,
 	output:
-		gff3_file="{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.TEanno.gff3",
+		gff3_file="{Project}/EDTA_Files/scaffold_{Chrs}.fasta.mod.EDTA.intact.gff3",
 	params:
 		project=PROJECT,
 
 	shell:
 		"""
-		cp {params.project}/Ref/scaffold_{wildcards.Chrs}.fasta {params.project}/EDTA_Files
+		cp {params.project}/Ref/*scaffold*.* {params.project}/EDTA_Files
 		cp -v Name_checker_pre.sh {params.project}/EDTA_Files
 		cp -v Name_checker_post.sh {params.project}/EDTA_Files
 		
 		cd {params.project}/EDTA_Files
 		
-		echo "Name_cheker pre and post correct EDTA bigger than 15 characters name error on FASTA."
+		echo "Name_cheker pre and post correct EDTA bigger tha 15 characters name error on FASTA."
 		bash Name_checker_pre.sh scaffold_{wildcards.Chrs}.fasta {params.project}
 		
 		eval "$(conda shell.bash hook)"
 		conda activate EDTA
 			echo starting EDTA process on: scaffold_{wildcards.Chrs}.fasta
-			EDTA.pl --overwrite 0 --genome scaffold_{wildcards.Chrs}.fasta --sensitive 0 --anno 1 --evaluate 0 --threads 16
+			EDTA.pl --genome scaffold_{wildcards.Chrs}.fasta
 		conda deactivate
 		
-		bash Name_checker_post.sh scaffold_{wildcards.Chrs}.fasta {params.project} scaffold_{wildcards.Chrs}.fasta.mod.EDTA.TEanno.gff3
+		bash Name_checker_post.sh scaffold_{wildcards.Chrs}.fasta {params.project} scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3
 		"""
 		
 #--------------------------------------------------------------------------------
@@ -145,7 +143,7 @@ rule Masked_FASTA:
 		ml bedtools
 		cd {params.project}/EDTA_Files
 		echo "Creating Masked Reference Genome for scaffold_{wildcards.Chrs}.masked.fasta"
-		bedtools maskfasta -fi scaffold_{wildcards.Chrs}.fasta -bed scaffold_{wildcards.Chrs}.fasta.mod.EDTA.TEanno.gff3 -fo {params.project}_chr{wildcards.Chrs}.masked.fasta
+		bedtools maskfasta -fi scaffold_{wildcards.Chrs}.fasta -bed scaffold_{wildcards.Chrs}.fasta.mod.EDTA.intact.gff3 -fo {params.project}_chr{wildcards.Chrs}.masked.fasta
 		ml unload bedtools	
 		"""
 
@@ -305,65 +303,3 @@ rule BUSCO:
 		busco -f -c 4 -m protein -i $BASEDIR/{params.project}/Summary_data/{params.project}.protein.fasta -o {params.project}_busco -l eudicots_odb10 --offline --download_path $BASEDIR/{params.project}/Summary_data/busco_downloads
 		echo done BUSCO analysis
 		"""
-
-#------------------------------------------------------------------------------------
-# Summary_statistics_Original: Get summary of the Original gff3 file
-#------------------------------------------------------------------------------------
-
-rule Summary_statistics_Original:
-	input:
-		Original_Gff3_file={GFF3_FILE},
-		Ref_file=rules.Init.output,
-	output:
-		Protein_FASTA="{Project}/Summary_data/{Project}.original.protein.fasta",
-	params:
-		project=PROJECT,
-	shell:
-		"""
-		BASEDIR=$PWD
-		ml StdEnv/2020  gcc/9.3.0
-		ml nixpkgs/16.09  gcc/5.4.0
-		ml nixpkgs/16.09  gcc/7.3.0
-		ml transdecoder/5.5.0
-		
-		gff3_file_to_proteins.pl --gff3 {input.Original_Gff3_file} --fasta $BASEDIR/{input.Ref_file} --seqType prot > $BASEDIR/{params.project}/Summary_data/{params.project}.original.protein.fasta
-		ml unload transdecoder/5.5.0
-		
-		echo Original Protein File Generated correctly CORRECTLY ....
-		ml unload perl
-		"""
-
-#---------------------------------------------------------------------------------------
-# BUSCO_Original: Evaluate the Cognate results into BUSCO protein mode from Orignal GFF3
-#---------------------------------------------------------------------------------------
-
-rule BUSCO_Original:
-	input:
-		Protein_fasta=rules.Summary_statistics_Original.output.Protein_FASTA,
-	output:
-		"{Project}/Summary_data/{Project}_busco_original/short_summary.specific.eudicots_odb10.{Project}_busco_original.txt",
-	params:
-		project=PROJECT,
-	shell:
-		"""
-		BASEDIR=$PWD
-		ml StdEnv/2020
-		ml gcc/9.3.0
-		ml openmpi/4.0.3
-		ml busco/5.2.2
-		mkdir {params.project}/Summary_data/busco_downloads_original
-		mkdir {params.project}/Summary_data/busco_downloads_original/lineages
-		
-		cp /home/jmlazaro/BUSCO/eudicots_odb10.tar.gz {params.project}/Summary_data/busco_downloads_original/lineages
-		cd {params.project}/Summary_data/busco_downloads_original/lineages
-		tar -xvf eudicots_odb10.tar.gz
-		cd $BASEDIR/{params.project}/Summary_data/
-		
-		busco -f -c 4 -m protein -i $BASEDIR/{params.project}/Summary_data/{params.project}.original.protein.fasta -o {params.project}_busco_original -l eudicots_odb10 --offline --download_path $BASEDIR/{params.project}/Summary_data/busco_downloads_original
-		echo done BUSCO analysis
-		rm -rf $BASEDIR/{params.project}/Summary_data/busco_downloads_original
-		echo done removing termporal BUSCO_downloads_Original Folder 
-		"""				
-#[jmlazaro@cedar1 Summary_data]$ cp HanOQP8_busco/run_eudicots_odb10/missing_busco_list.tsv Missing_buscos/HanOQP8_busco_new.txt
-#[jmlazaro@cedar1 Summary_data]$ cp HanOQP8_busco_original/run_eudicots_odb10/missing_busco_list.tsv Missing_buscos/HanOQP8_busco_original.txt
-#diff -y HanOQP8_busco_new.txt HanOQP8_busco_original.txt > Missing_buscos.txt

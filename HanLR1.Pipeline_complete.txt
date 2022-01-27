@@ -1,0 +1,3 @@
+Pipeline Finished correctly for HanLR1..... CONGRATS!!!
+DATE: 01/22/22
+TIME: 08:59:38

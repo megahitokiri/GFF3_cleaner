@@ -63,10 +63,28 @@ Chr_merge:
     output: Chr_merge-%j.out #stdoutput. 
     error: Chr_merge-%j.err #stdoutput error
     cpus: 1 
-    
+
+Summary_statistics:
+    time: 0-1:45:00 # time limit for each job
+    output: Summary_statistics-%j.out #stdoutput. 
+    error: Summary_statistics-%j.err #stdoutput error
+    cpus: 4
+
+Summary_statistics_Original:
+    time: 0-1:45:00 # time limit for each job
+    output: Summary_statistics_Original-%j.out #stdoutput. 
+    error: Summary_statistics_Original-%j.err #stdoutput error
+    cpus: 4
+      
 BUSCO:
     time: 0-2:45:00 # time limit for each job
     output: BUSCO-%j.out #stdoutput. 
     error: BUSCO-%j.err #stdoutput error
+    cpus: 16    
+
+BUSCO_Original:
+    time: 0-2:45:00 # time limit for each job
+    output: BUSCO_Original-%j.out #stdoutput. 
+    error: BUSCO_Original-%j.err #stdoutput error
     cpus: 16    
     
