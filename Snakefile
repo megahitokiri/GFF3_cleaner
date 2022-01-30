@@ -390,5 +390,8 @@ rule Missing_BUSCO:
 		cp -v {input.Busco_New} {params.project}/Summary_data/Missing_buscos/{params.project}_busco_new.txt
 		
 		cd {params.project}/Summary_data/Missing_buscos
-		diff -y {params.project}_busco_new.txt {params.project}_busco_original.txt > {params.project}/Summary_data/Missing_buscos/{params.project}_Missing_buscos.txt
+		echo "processing diff file"
+		diff -y {params.project}_busco_new.txt {params.project}_busco_original.txt > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_preprocessed.txt
+		grep "<" $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_preprocessed.txt | awk '{{print $1}}' > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_buscos.txt
+		echo "diff file correctly processed"
 		"""			
