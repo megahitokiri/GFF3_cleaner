@@ -378,6 +378,7 @@ rule Missing_BUSCO:
 	input:
 		Busco_Original=rules.BUSCO_Original.output.Busco_Original_Missing,
 		Busco_New=rules.BUSCO.output.Busco_New_Missing,
+		Gff3_file={GFF3_FILE},
 	output:
 		"{Project}/Summary_data/Missing_buscos/{Project}_Missing_buscos.txt",
 	params:
@@ -388,10 +389,21 @@ rule Missing_BUSCO:
 		mkdir {params.project}/Summary_data/Missing_buscos
 		cp -v {input.Busco_Original} {params.project}/Summary_data/Missing_buscos/{params.project}_busco_original.txt
 		cp -v {input.Busco_New} {params.project}/Summary_data/Missing_buscos/{params.project}_busco_new.txt
+		cp -v {params.project}/Summary_data/{params.project}_busco_original/run_eudicots_odb10/full_table.tsv {params.project}/Summary_data/Missing_buscos
 		
 		cd {params.project}/Summary_data/Missing_buscos
 		echo "processing diff file"
 		diff -y {params.project}_busco_new.txt {params.project}_busco_original.txt > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_preprocessed.txt
 		grep "<" $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_preprocessed.txt | awk '{{print $1}}' > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_buscos.txt
 		echo "diff file correctly processed"
+		grep -F -f {params.project}_Missing_buscos.txt full_table.tsv > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes_list.txt
+		echo Missing Busco genes list ready
+		awk '{{gsub("mRNA:", "");print}}' $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes_list.txt | awk '{{print $3}}' > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes_list.tsv
+
+		echo extracting missing buscos from original GFF3
+		head -n 1 $BASEDIR/{input.Gff3_file} > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.gff3
+		grep -F -f {params.project}_Missing_Busco_genes_list.tsv $BASEDIR/{input.Gff3_file} >> $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.gff3
+		
+		echo missing busco GFF3 created correctly.
+		
 		"""			
