@@ -32,16 +32,22 @@ rule FINAL_GFF3:
 		expand("{Project}/Summary_data/{Project}_busco_original/short_summary.specific.eudicots_odb10.{Project}_busco_original.txt",Project=PROJECT),
 		expand("{Project}/Summary_data/{Project}_busco_original/run_eudicots_odb10/missing_busco_list.tsv",Project=PROJECT),
 		expand("{Project}/Summary_data/Missing_buscos/{Project}_Missing_buscos.txt",Project=PROJECT),
+		expand("{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_2.sorted.flagged.gff3",Project=PROJECT),
 	params:
 		project=PROJECT,
 	shell:
 		"""
-		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!!
 		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!! > {params.project}.Pipeline_complete.txt
+
 		mv *.err {params.project}/logs
 		mv *.out {params.project}/logs
 
 		date "+DATE: %D%nTIME: %T" >> {params.project}.Pipeline_complete.txt
+		
+		cp -v {params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1_2.sorted.flagged.gff3 {params.project}/{params.project}.Rieseberg.v1_2.gff3
+		echo final annotation file located at: {params.project}/{params.project}.Rieseberg.v1_2.gff3 >> {params.project}.Pipeline_complete.txt
+
+		echo Pipeline Finished correctly for {params.project}..... CONGRATS!!!
 		"""	
 #--------------------------------------------------------------------------------
 # Init: Initializing files and folder
@@ -378,9 +384,11 @@ rule Missing_BUSCO:
 	input:
 		Busco_Original=rules.BUSCO_Original.output.Busco_Original_Missing,
 		Busco_New=rules.BUSCO.output.Busco_New_Missing,
-		Gff3_file={GFF3_FILE},
+		Original_GFF3_file={GFF3_FILE},
+		GFF3_file=rules.Chr_merge.output,
 	output:
-		"{Project}/Summary_data/Missing_buscos/{Project}_Missing_buscos.txt",
+		Missing_Busco_List="{Project}/Summary_data/Missing_buscos/{Project}_Missing_buscos.txt",
+		New_BUSCO_GFF3_file="{Project}/FINAL_ANNOTATION/FINAL_{Project}_v1_2.sorted.flagged.gff3",
 	params:
 		project=PROJECT,
 	shell:
@@ -401,9 +409,14 @@ rule Missing_BUSCO:
 		awk '{{gsub("mRNA:", "");print}}' $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes_list.txt | awk '{{print $3}}' > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes_list.tsv
 
 		echo extracting missing buscos from original GFF3
-		head -n 1 $BASEDIR/{input.Gff3_file} > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.gff3
-		grep -F -f {params.project}_Missing_Busco_genes_list.tsv $BASEDIR/{input.Gff3_file} >> $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.gff3
-		
+#		head -n 1 $BASEDIR/{input.Original_GFF3_file} > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.gff3
+		grep -F -f {params.project}_Missing_Busco_genes_list.tsv $BASEDIR/{input.Original_GFF3_file} > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.tsv
+		awk '{{gsub("locus_tag=", "locus_tag=BUSCO_");print}}' {params.project}_Missing_Busco_genes.tsv > $BASEDIR/{params.project}/Summary_data/Missing_buscos/{params.project}_Missing_Busco_genes.gff3
 		echo missing busco GFF3 created correctly.
+
+		cat $BASEDIR/{params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1_1.sorted.gff3 {params.project}_Missing_Busco_genes.gff3 > $BASEDIR/{params.project}/Summary_data/Missing_buscos/FINAL_{params.project}_v1_2.flagged.gff3
+		echo Merging GFF3 files to reincorporate missing BUSCOs gene
 		
+		/home/jmlazaro/github/gff3sort/gff3sort.pl --chr_order original $BASEDIR/{params.project}/Summary_data/Missing_buscos/FINAL_{params.project}_v1_2.flagged.gff3 > $BASEDIR/{params.project}/FINAL_ANNOTATION/FINAL_{params.project}_v1_2.sorted.flagged.gff3
+		echo Sorted completed correcty.
 		"""			
