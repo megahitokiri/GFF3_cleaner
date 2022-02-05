@@ -15,7 +15,7 @@ if [ ! -f "$GFF3_File" ]; then
    exit
 fi
 
-if [[ $Name_size -gt 15 ]]
+if [[ $Name_size -ge 15 ]]
 then
   echo "The Name of the fasta file is greater than 15: Changing the name of GFF3 to match FASTA"
   mv $Fasta_File $Fasta_File.replace
